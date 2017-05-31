@@ -1,0 +1,25 @@
+from simple_salesforce import Salesforce #Win+R>cmd: pip install simple_salesforce
+
+import re
+import json
+user="USERNAME"
+passwd="PASSWORD"
+token="TOKEN"
+Case_id = "CASE #"
+comment_to_search="text"
+comment_dict= {'CommentBody':'test2'}
+sf = Salesforce(username=user, password=passwd, security_token=token)
+
+string = str(sf.query("SELECT Id FROM Casecomment WHERE parentid in "
+                      "(SELECT Id FROM Case WHERE CaseNumber = '"+str(Case_id)+"')"))
+NumCasesFound = re.findall("'Id', '([\w\d]*)'\)]\)", string)
+
+for comment_id in NumCasesFound:
+    string = str(sf.query("SELECT id, commentBody FROM Casecomment WHERE id ='" +comment_id+ "'"))
+    Comment_body = re.findall("'CommentBody', '(.*)'\)", string)
+
+    if len(Comment_body) != 0 and Comment_body[0]== comment_to_search:
+        Comment_id = re.findall("'Id', '([\w\d]*)'\)", string)
+        url=sf.base_url + 'sobjects/CaseComment/' + str(comment_id)
+        result = sf._call_salesforce(method='patch', url=url, data=json.dumps(comment_dict))
+
